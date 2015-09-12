@@ -6,6 +6,8 @@ import Mouse
 import StartApp
 import Effects exposing (Effects, Never)
 import Task
+import BittygameClient exposing (beginGame)
+import BittygameClient.Types exposing (..)
 
 
 -- wiring
@@ -38,11 +40,28 @@ init =
     {
       displayText = initialDisplayText
     },
-    Effects.none
+    beginGame takeTurn handleError "hungover"
   )
 
+takeTurn: Turn -> Action
+takeTurn turn =
+  let
+    doOneThing instr =
+      case instr of
+        ExitGame -> Nothing  -- Not implemented
+        Print stuff -> Just (StuffToPrint stuff)
+  in
+    turn.instructions 
+    |> List.filterMap doOneThing
+    |> List.head
+    |> Maybe.withDefault SitAround
+
+handleError e = StuffToPrint ("crap!! " ++ (toString e))
+
 -- update
-type Action = StuffToPrint String
+type Action = 
+    SitAround
+  | StuffToPrint String
 
 update: Action -> Model -> (Model, Effects Action)
 update action model = 
