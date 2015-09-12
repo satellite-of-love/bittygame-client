@@ -14,7 +14,7 @@ app = StartApp.start
     init = init, 
     view = view, 
     update = update, 
-    inputs = [whereIsThePointer] 
+    inputs = [] 
   }
 
 main : Signal Html
@@ -23,27 +23,39 @@ main = app.html
 port tasks : Signal (Task.Task Never ())
 port tasks = app.tasks
 
-whereIsThePointer: Signal Action
-whereIsThePointer = Signal.map PointerMoved Mouse.position
-
 -- MODEL
-type alias Model = (Int, Int)
+type alias Model = 
+  {
+    displayText : String
+  }
 
 init: (Model, Effects Action)
-init = ((0,0), Effects.none)
+init = 
+  let
+    initialDisplayText = "Hello there"
+  in
+  (
+    {
+      displayText = initialDisplayText
+    },
+    Effects.none
+  )
 
 -- update
-type Action = PointerMoved (Int, Int)
+type Action = StuffToPrint String
 
 update: Action -> Model -> (Model, Effects Action)
 update action model = 
   case action of
-    PointerMoved (x, y) -> ((x, y), Effects.none)
+    StuffToPrint text -> 
+      (
+        { model |
+          displayText <- text
+        },
+        Effects.none
+      )
 
 -- view
 
 view : Signal.Address Action -> Model -> Html
-view a model = pointerView model
-
-pointerView: (Int, Int) -> Html
-pointerView (x, y) = Html.text ("you are pointing at " ++ (toString x) ++ ", " ++ (toString y))
+view a model = Html.text model.displayText
