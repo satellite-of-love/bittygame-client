@@ -1,24 +1,38 @@
 module BittygameClient.Serialization(turn) where
 
 import BittygameClient.Types exposing(..)
-import Json.Decode exposing (Decoder, list, string, object1, object2, andThen, (:=), succeed)
+import Json.Decode as D exposing (Decoder, object1, object2, andThen, (:=), succeed)
+import Json.Encode as E exposing (Value)
 
+-- DERODERS
 distinguishInstruction : String -> Decoder Instruction
 distinguishInstruction t =
   case t of
     "exit" -> succeed ExitGame
-    "print" -> object1 Print ("message" := string)
+    "print" -> object1 Print ("message" := D.string)
 
 instruction: Decoder Instruction
 instruction =
-  ("type" := string) `andThen` distinguishInstruction
+  ("type" := D.string) `andThen` distinguishInstruction
 
 state: Decoder State
 state = 
  object1 State 
-    ("inventory" := (list string))
+    ("inventory" := (D.list D.string))
 
 turn: Decoder Turn
 turn = object2 Turn
   ("state" := state)
-  ("instructions" := (list instruction))
+  ("instructions" := (D.list instruction))
+
+thoughts: Decoder Thoughts
+thoughts = D.list D.string
+
+--- ENCODERS
+encodeState: State -> String
+encodeState state = 
+  E.object
+    [
+      ("inventory", E.list (List.map E.string state.inventory))
+    ]
+  |> E.encode 1
