@@ -1,4 +1,4 @@
-module BittygameClient.Serialization(turn) where
+module BittygameClient.Serialization(turn, thoughts, encodeState) where
 
 import BittygameClient.Types exposing(..)
 import Json.Decode as D exposing (Decoder, object1, object2, andThen, (:=), succeed)
