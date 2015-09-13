@@ -16,3 +16,9 @@ type alias Turn =
     state: State,
     instructions: List Instruction
   }
+
+type alias Act =
+  {
+    state: State,
+    playerMove: String
+  }

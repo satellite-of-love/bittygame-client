@@ -63,14 +63,14 @@ takeTurn turn =
   in
     turn.instructions 
     |> List.filterMap doOneThing
-    |> List.head
-    |> Maybe.withDefault SitAround
+    |> ManyActions
 
 handleError e = StuffToPrint ("crap!! " ++ (toString e))
 
 -- update
 type Action = 
     SitAround
+  | ManyActions (List Action)
   | Think
   | StuffToPrint String
   | Input String
@@ -81,6 +81,8 @@ update action model =
   case action of
     Think -> (model, BittygameClient.think doWithThoughts handleError model.gameName model.state)
     SitAround -> (model, Effects.none)
+    ManyActions allOfThese ->
+      updateAll allOfThese model -- mutually recursive
     Input move -> 
       ( 
         { model |
@@ -91,9 +93,14 @@ update action model =
     MakeMove -> 
       (
         { model |
-          displayText <- "I want to " ++ model.currentMove
+          displayText <- "I am gonna " ++ model.currentMove
         },
-        Effects.none
+        BittygameClient.turn takeTurn handleError 
+          model.gameName 
+          { 
+            state = model.state, 
+            playerMove = model.currentMove 
+          }
       )
     StuffToPrint text -> 
       (
@@ -102,6 +109,18 @@ update action model =
         },
         Effects.none
       )
+
+updateAll : List Action -> Model -> (Model, Effects Action)
+updateAll actions model =
+  let
+    keepUpdating: Action -> (Model, Effects Action) -> (Model, Effects Action)
+    keepUpdating action (model, effectSoFar) =
+      let
+        (newModel, moreEffects) = update action model
+      in
+        (newModel, Effects.batch [effectSoFar, moreEffects])
+  in
+    List.foldl keepUpdating (model, Effects.none) actions
 
 doWithThoughts : Thoughts -> Action
 doWithThoughts thoughts =

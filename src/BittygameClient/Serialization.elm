@@ -1,4 +1,4 @@
-module BittygameClient.Serialization(turn, thoughts, encodeState) where
+module BittygameClient.Serialization(turn, thoughts, encodeState, encodeAct) where
 
 import BittygameClient.Types exposing(..)
 import Json.Decode as D exposing (Decoder, object1, object2, andThen, (:=), succeed)
@@ -34,4 +34,12 @@ encodeState state =
   E.object
     [
       ("inventory", E.list (List.map E.string state.inventory))
+    ]
+
+encodeAct: Act -> Value
+encodeAct act =
+  E.object 
+    [
+      ("state", encodeState act.state),
+      ("playerMove", E.string act.playerMove)
     ]
