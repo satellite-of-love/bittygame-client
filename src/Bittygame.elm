@@ -192,10 +192,18 @@ view a model =
     [] 
     (
       [
+        header model,
         Html.text model.displayText,
         Html.div [] interactions
       ]
     )
+
+header : Model -> Html
+header model = 
+  Html.div [] 
+  [
+    Html.h1 [] [Html.text ("You are playing " ++ model.gameName)]
+  ]
 
 onInput : Signal.Address a -> (String -> a) -> Attribute
 onInput addr contentToValue =
