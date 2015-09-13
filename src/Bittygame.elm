@@ -6,10 +6,12 @@ import Html.Attributes as Attr
 import Signal
 import Mouse
 import StartApp
+import Dict exposing (Dict)
 import Effects exposing (Effects, Never)
 import Task
 import BittygameClient exposing (beginGame)
 import BittygameClient.Types exposing (..)
+import UrlParameterParser exposing (ParseResult(..), parseSearchString)
 
 
 -- wiring
@@ -27,6 +29,14 @@ main = app.html
 port tasks : Signal (Task.Task Never ())
 port tasks = app.tasks
 
+port locationSearch : String
+
+parameters : Dict String String
+parameters = 
+  case (parseSearchString locationSearch) of
+    Error _ -> Dict.empty
+    UrlParams dict -> dict
+
 -- MODEL
 type alias Model = 
   {
@@ -42,7 +52,9 @@ init =
   let
     initialDisplayText = "Hello there"
     initialState = { inventory = [] }
-    gameName = "hungover"
+    gameName = 
+      Dict.get "game" parameters
+      |> Maybe.withDefault "hungover"
   in
   (
     {
@@ -82,7 +94,7 @@ type Action =
 update: Action -> Model -> (Model, Effects Action)
 update action model = 
   case action of
-    Think -> (model, BittygameClient.think doWithThoughts handleError model.gameName model.state)
+    Think -> (model, respondToThink model)
     SitAround -> (model, Effects.none)
     ManyActions allOfThese ->
       updateAll allOfThese model -- mutually recursive
@@ -94,17 +106,21 @@ update action model =
         Effects.none
       )
     MakeMove -> 
-      (
-        { model |
-          displayText <- "I am gonna " ++ model.currentMove
-        },
-        BittygameClient.turn takeTurn handleError 
-          model.gameName 
-          { 
-            state = model.state, 
-            playerMove = model.currentMove 
-          }
-      )
+      if model.currentMove == "think" then
+        ( 
+          { model 
+            | currentMove <- ""
+          },
+          respondToThink model
+        )
+      else
+        (
+          { model |
+            displayText <- "I am gonna " ++ model.currentMove,
+            currentMove <- ""
+          },
+          respondToMakeMove model
+        )
     StuffToPrint text -> 
       (
         { model |
@@ -119,6 +135,20 @@ update action model =
         },
         Effects.none
       )
+
+respondToThink : Model -> Effects Action
+respondToThink model =       
+  BittygameClient.think doWithThoughts handleError model.gameName model.state
+
+respondToMakeMove : Model -> Effects Action  
+respondToMakeMove model =
+  BittygameClient.turn takeTurn handleError 
+    model.gameName 
+    { 
+      state = model.state, 
+      playerMove = model.currentMove 
+    }
+  
 
 updateAll : List Action -> Model -> (Model, Effects Action)
 updateAll actions model =
@@ -152,8 +182,8 @@ view a model =
     interactions =
       if model.inGame then
         [
-          Html.button [Events.onClick a Think] [Html.text "Think"],
-          Html.input [onInput a Input, onEnter a SitAround MakeMove, Attr.value model.currentMove] []
+          Html.input [onInput a Input, onEnter a SitAround MakeMove, Attr.value model.currentMove] [],
+          Html.button [Events.onClick a Think] [Html.text "Think"]
         ]
       else
         [ Html.a [Attr.href ""] [Html.text "Start Over"] ]
@@ -161,8 +191,10 @@ view a model =
   Html.div 
     [] 
     (
-      [Html.text model.displayText]
-      ++ interactions
+      [
+        Html.text model.displayText,
+        Html.div [] interactions
+      ]
     )
 
 onInput : Signal.Address a -> (String -> a) -> Attribute
