@@ -1,6 +1,7 @@
 module Bittygame where
 
 import Html exposing (Html)
+import Html.Events as Events
 import Signal
 import Mouse
 import StartApp
@@ -28,19 +29,25 @@ port tasks = app.tasks
 -- MODEL
 type alias Model = 
   {
-    displayText : String
+    displayText : String,
+    state : State,
+    gameName : String
   }
 
 init: (Model, Effects Action)
 init = 
   let
     initialDisplayText = "Hello there"
+    initialState = { inventory = [] }
+    gameName = "hungover"
   in
   (
     {
-      displayText = initialDisplayText
+      displayText = initialDisplayText,
+      state = initialState,
+      gameName = gameName
     },
-    beginGame takeTurn handleError "hungover"
+    beginGame takeTurn handleError gameName
   )
 
 takeTurn: Turn -> Action
@@ -61,11 +68,14 @@ handleError e = StuffToPrint ("crap!! " ++ (toString e))
 -- update
 type Action = 
     SitAround
+  | Think
   | StuffToPrint String
 
 update: Action -> Model -> (Model, Effects Action)
 update action model = 
   case action of
+    Think -> (model, BittygameClient.think doWithThoughts handleError model.gameName model.state)
+    SitAround -> (model, Effects.none)
     StuffToPrint text -> 
       (
         { model |
@@ -74,7 +84,25 @@ update action model =
         Effects.none
       )
 
+doWithThoughts : Thoughts -> Action
+doWithThoughts thoughts =
+  StuffToPrint ("Well, I could " ++ (joinTheFuckingList " or " thoughts))
+
+
+joinTheFuckingList: String -> List String -> String
+joinTheFuckingList joinString = 
+  let
+    whyCantIMakeAnAnonymousFunctionWithTwoArguments e accum =
+      accum ++ joinString ++ e
+  in
+    List.foldl whyCantIMakeAnAnonymousFunctionWithTwoArguments ""
 -- view
 
 view : Signal.Address Action -> Model -> Html
-view a model = Html.text model.displayText
+view a model = 
+  Html.div 
+    [] 
+    [
+      Html.text model.displayText,
+      Html.button [Events.onClick a Think] [Html.text "Think"]
+    ]

@@ -29,10 +29,9 @@ thoughts: Decoder Thoughts
 thoughts = D.list D.string
 
 --- ENCODERS
-encodeState: State -> String
+encodeState: State -> Value
 encodeState state = 
   E.object
     [
       ("inventory", E.list (List.map E.string state.inventory))
     ]
-  |> E.encode 1

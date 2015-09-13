@@ -1,7 +1,8 @@
-module BittygameClient(beginGame) where
+module BittygameClient(beginGame, think) where
 
 import Http
 import Task
+import GetWithHeaders exposing (postJson)
 import Effects exposing (Effects)
 import BittygameClient.Types exposing (..)
 import BittygameClient.Serialization as Ser
@@ -10,7 +11,7 @@ baseUrl = "http://localhost:8080"
 
 beginGameUrl name = baseUrl ++ "/game/" ++ name ++ "/begin"
 
-thinkUrl name = baseUrl ++ "/game/" ++ name ++ "/turn"
+thinkUrl name = baseUrl ++ "/game/" ++ name ++ "/think"
 
 beginGame: (Turn -> action) -> (Http.Error -> action) -> String -> Effects action
 beginGame successAction failureAction name = 
@@ -33,7 +34,8 @@ think successAction failureAction name state =
         Ok  but -> successAction but
         Err poo -> failureAction poo
   in
-  Http.post Ser.thoughts (thinkUrl name) (Http.string (Ser.encodeState state))
+  postJson Ser.thoughts [] (thinkUrl name) (Ser.encodeState state)
+  |> Task.map snd -- ignore the headers in the response
   |> Task.toResult
   |> Task.map handler
   |> Effects.task
