@@ -33,7 +33,8 @@ type alias Model =
     displayText : String,
     currentMove : String,
     state : State,
-    gameName : String
+    gameName : String,
+    inGame : Bool
   }
 
 init: (Model, Effects Action)
@@ -48,7 +49,8 @@ init =
       displayText = initialDisplayText,
       currentMove = "",
       state = initialState,
-      gameName = gameName
+      gameName = gameName,
+      inGame = True
     },
     beginGame takeTurn handleError gameName
   )
@@ -58,7 +60,7 @@ takeTurn turn =
   let
     doOneThing instr =
       case instr of
-        ExitGame -> Nothing  -- Not implemented
+        ExitGame -> Just Exit  
         Print stuff -> Just (StuffToPrint stuff)
   in
     turn.instructions 
@@ -75,6 +77,7 @@ type Action =
   | StuffToPrint String
   | Input String
   | MakeMove
+  | Exit
 
 update: Action -> Model -> (Model, Effects Action)
 update action model = 
@@ -109,6 +112,13 @@ update action model =
         },
         Effects.none
       )
+    Exit -> 
+      (
+        { model |
+          inGame <- False
+        },
+        Effects.none
+      )
 
 updateAll : List Action -> Model -> (Model, Effects Action)
 updateAll actions model =
@@ -138,13 +148,22 @@ joinTheFuckingList joinString =
 
 view : Signal.Address Action -> Model -> Html
 view a model = 
+  let 
+    interactions =
+      if model.inGame then
+        [
+          Html.button [Events.onClick a Think] [Html.text "Think"],
+          Html.input [onInput a Input, onEnter a SitAround MakeMove, Attr.value model.currentMove] []
+        ]
+      else
+        [ Html.a [Attr.href ""] [Html.text "Start Over"] ]
+  in
   Html.div 
     [] 
-    [
-      Html.text model.displayText,
-      Html.button [Events.onClick a Think] [Html.text "Think"],
-      Html.input [onInput a Input, onEnter a SitAround MakeMove, Attr.value model.currentMove] []
-    ]
+    (
+      [Html.text model.displayText]
+      ++ interactions
+    )
 
 onInput : Signal.Address a -> (String -> a) -> Attribute
 onInput addr contentToValue =
