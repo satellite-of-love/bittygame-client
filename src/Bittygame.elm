@@ -1,7 +1,8 @@
 module Bittygame where
 
-import Html exposing (Html)
+import Html exposing (Html, Attribute)
 import Html.Events as Events
+import Html.Attributes as Attr
 import Signal
 import Mouse
 import StartApp
@@ -30,6 +31,7 @@ port tasks = app.tasks
 type alias Model = 
   {
     displayText : String,
+    currentMove : String,
     state : State,
     gameName : String
   }
@@ -44,6 +46,7 @@ init =
   (
     {
       displayText = initialDisplayText,
+      currentMove = "",
       state = initialState,
       gameName = gameName
     },
@@ -70,12 +73,28 @@ type Action =
     SitAround
   | Think
   | StuffToPrint String
+  | Input String
+  | MakeMove
 
 update: Action -> Model -> (Model, Effects Action)
 update action model = 
   case action of
     Think -> (model, BittygameClient.think doWithThoughts handleError model.gameName model.state)
     SitAround -> (model, Effects.none)
+    Input move -> 
+      ( 
+        { model |
+          currentMove <- move
+        },
+        Effects.none
+      )
+    MakeMove -> 
+      (
+        { model |
+          displayText <- "I want to " ++ model.currentMove
+        },
+        Effects.none
+      )
     StuffToPrint text -> 
       (
         { model |
@@ -104,5 +123,20 @@ view a model =
     [] 
     [
       Html.text model.displayText,
-      Html.button [Events.onClick a Think] [Html.text "Think"]
+      Html.button [Events.onClick a Think] [Html.text "Think"],
+      Html.input [onInput a Input, onEnter a SitAround MakeMove, Attr.value model.currentMove] []
     ]
+
+onInput : Signal.Address a -> (String -> a) -> Attribute
+onInput addr contentToValue =
+    Events.on "input" Events.targetValue (\str -> Signal.message addr (contentToValue str))
+
+onEnter : Signal.Address a -> a -> a -> Attribute
+onEnter address doNothing action =
+  let
+    respondTo code =
+      case code of
+        13 -> action
+        _  -> doNothing
+    in
+    Events.on "keyup" Events.keyCode (\code -> Signal.message address (respondTo code))
