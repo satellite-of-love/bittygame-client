@@ -5,6 +5,7 @@ type alias Thoughts = List String
 type Instruction = 
     ExitGame
   | Print String
+  | Win
 
 type alias State = 
   { 

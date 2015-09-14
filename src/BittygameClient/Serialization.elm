@@ -8,8 +8,9 @@ import Json.Encode as E exposing (Value)
 distinguishInstruction : String -> Decoder Instruction
 distinguishInstruction t =
   case t of
-    "exit" -> succeed ExitGame
+    "exit"  -> succeed ExitGame
     "print" -> object1 Print ("message" := D.string)
+    "win"   -> succeed Win
 
 instruction: Decoder Instruction
 instruction =

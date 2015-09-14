@@ -9,7 +9,7 @@ import StartApp
 import Dict exposing (Dict)
 import Effects exposing (Effects, Never)
 import Task
-import BittygameClient exposing (beginGame)
+import BittygameClient
 import BittygameClient.Types exposing (..)
 import UrlParameterParser exposing (ParseResult(..), parseSearchString)
 
@@ -37,6 +37,11 @@ parameters =
     Error _ -> Dict.empty
     UrlParams dict -> dict
 
+server : String
+server = 
+  Dict.get "server" parameters
+  |> Maybe.withDefault "http://localhost:8080"
+
 -- MODEL
 type alias Model = 
   {
@@ -44,7 +49,8 @@ type alias Model =
     currentMove : String,
     state : State,
     gameName : String,
-    inGame : Bool
+    inGame : Bool,
+    won : Bool
   }
 
 init: (Model, Effects Action)
@@ -62,11 +68,13 @@ init =
       currentMove = "",
       state = initialState,
       gameName = gameName,
-      inGame = True
+      inGame = True,
+      won = False
     },
-    beginGame takeTurn handleError gameName
+    BittygameClient.beginGame server takeTurn handleError gameName
   )
 
+-- update
 takeTurn: Turn -> Action
 takeTurn turn =
   let
@@ -74,6 +82,7 @@ takeTurn turn =
       case instr of
         ExitGame -> Just Exit  
         Print stuff -> Just (StuffToPrint stuff)
+        Win -> Just YouWin
   in
     turn.instructions 
     |> List.filterMap doOneThing
@@ -81,7 +90,7 @@ takeTurn turn =
 
 handleError e = StuffToPrint ("crap!! " ++ (toString e))
 
--- update
+
 type Action = 
     SitAround
   | ManyActions (List Action)
@@ -90,6 +99,7 @@ type Action =
   | Input String
   | MakeMove
   | Exit
+  | YouWin
 
 update: Action -> Model -> (Model, Effects Action)
 update action model = 
@@ -135,14 +145,21 @@ update action model =
         },
         Effects.none
       )
+    YouWin -> 
+      (
+        { model |
+          won <- True
+        },
+        Effects.none
+      )
 
 respondToThink : Model -> Effects Action
 respondToThink model =       
-  BittygameClient.think doWithThoughts handleError model.gameName model.state
+  BittygameClient.think server doWithThoughts handleError model.gameName model.state
 
 respondToMakeMove : Model -> Effects Action  
 respondToMakeMove model =
-  BittygameClient.turn takeTurn handleError 
+  BittygameClient.turn server takeTurn handleError 
     model.gameName 
     { 
       state = model.state, 
@@ -168,12 +185,17 @@ doWithThoughts thoughts =
 
 
 joinTheFuckingList: String -> List String -> String
-joinTheFuckingList joinString = 
-  let
-    whyCantIMakeAnAnonymousFunctionWithTwoArguments e accum =
-      accum ++ joinString ++ e
-  in
-    List.foldl whyCantIMakeAnAnonymousFunctionWithTwoArguments ""
+joinTheFuckingList joinString these = 
+  if (List.length these) > 1 then
+    let
+      (start :: rest) = these
+      whyCantIMakeAnAnonymousFunctionWithTwoArguments e accum =
+        accum ++ joinString ++ e
+    in
+      List.foldl whyCantIMakeAnAnonymousFunctionWithTwoArguments start rest
+  else
+    List.head these |> Maybe.withDefault ""
+
 -- view
 
 view : Signal.Address Action -> Model -> Html
@@ -200,10 +222,17 @@ view a model =
 
 header : Model -> Html
 header model = 
+  let
+    announcement = 
+      if model.won then
+        "You have won "
+      else
+        "You are playing "
+  in
   Html.div [] 
-  [
-    Html.h1 [] [Html.text ("You are playing " ++ model.gameName)]
-  ]
+    [
+      Html.h1 [] [Html.text (announcement ++ model.gameName)]
+    ]
 
 onInput : Signal.Address a -> (String -> a) -> Attribute
 onInput addr contentToValue =
