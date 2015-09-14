@@ -186,15 +186,15 @@ doWithThoughts thoughts =
 
 joinTheFuckingList: String -> List String -> String
 joinTheFuckingList joinString these = 
-  if (List.length these) > 1 then
-    let
-      (start :: rest) = these
-      whyCantIMakeAnAnonymousFunctionWithTwoArguments e accum =
-        accum ++ joinString ++ e
-    in
-      List.foldl whyCantIMakeAnAnonymousFunctionWithTwoArguments start rest
-  else
-    List.head these |> Maybe.withDefault ""
+  case these of
+    [] -> ""
+    one :: [] -> one 
+    start :: rest ->
+      let   
+        whyCantIMakeAnAnonymousFunctionWithTwoArguments e accum =
+          accum ++ joinString ++ e
+      in
+        List.foldl whyCantIMakeAnAnonymousFunctionWithTwoArguments start rest
 
 -- view
 
