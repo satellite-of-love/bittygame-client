@@ -294,6 +294,7 @@ Elm.Bittygame.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $StartApp = Elm.StartApp.make(_elm),
+   $String = Elm.String.make(_elm),
    $Task = Elm.Task.make(_elm),
    $UrlParameterParser = Elm.UrlParameterParser.make(_elm);
    var onEnter = F3(function (address,
@@ -363,7 +364,7 @@ Elm.Bittygame.make = function (_elm) {
               }();
             case "[]": return "";}
          _U.badCase($moduleName,
-         "between lines 189 and 197");
+         "between lines 197 and 205");
       }();
    });
    var YouWin = {ctor: "YouWin"};
@@ -435,7 +436,7 @@ Elm.Bittygame.make = function (_elm) {
                   case "Win":
                   return $Maybe.Just(YouWin);}
                _U.badCase($moduleName,
-               "between lines 82 and 86");
+               "between lines 90 and 94");
             }();
          };
          return ManyActions($List.filterMap(doOneThing)(turn.instructions));
@@ -469,11 +470,19 @@ Elm.Bittygame.make = function (_elm) {
          case "UrlParams":
          return _v6._0;}
       _U.badCase($moduleName,
-      "between lines 36 and 38");
+      "between lines 37 and 39");
    }();
-   var server = $Maybe.withDefault("http://localhost:8080")(A2($Dict.get,
-   "server",
-   parameters));
+   var server = function () {
+      var v = $Maybe.withDefault("http://localhost:8080")(A2($Dict.get,
+      "server",
+      parameters));
+      return A2($String.endsWith,
+      "/",
+      v) ? A3($String.slice,
+      0,
+      -1,
+      v) : v;
+   }();
    var respondToThink = function (model) {
       return A5($BittygameClient.think,
       server,
@@ -547,7 +556,7 @@ Elm.Bittygame.make = function (_elm) {
                    model)
                    ,_1: $Effects.none};}
          _U.badCase($moduleName,
-         "between lines 106 and 154");
+         "between lines 114 and 162");
       }();
    });
    var updateAll = F2(function (actions,
@@ -570,7 +579,7 @@ Elm.Bittygame.make = function (_elm) {
                                                                ,moreEffects]))};
                     }();}
                _U.badCase($moduleName,
-               "between lines 175 and 178");
+               "between lines 183 and 186");
             }();
          });
          return A3($List.foldl,
