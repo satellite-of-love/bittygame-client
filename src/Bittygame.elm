@@ -9,6 +9,7 @@ import StartApp
 import Dict exposing (Dict)
 import Effects exposing (Effects, Never)
 import Task
+import String
 import BittygameClient
 import BittygameClient.Types exposing (..)
 import UrlParameterParser exposing (ParseResult(..), parseSearchString)
@@ -39,8 +40,15 @@ parameters =
 
 server : String
 server = 
-  Dict.get "server" parameters
-  |> Maybe.withDefault "http://localhost:8080"
+  let 
+    v = Dict.get "server" parameters
+        |> Maybe.withDefault "http://localhost:8080"
+  in
+    if String.endsWith "/" v then
+      String.slice 0 -1 v
+    else
+      v
+
 
 -- MODEL
 type alias Model = 
