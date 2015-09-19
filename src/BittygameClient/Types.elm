@@ -10,6 +10,14 @@ type Instruction =
     ExitGame
   | Print String
   | Win
+  | IDontKnowHowTo String
+  | CantDoThat String
+  | Acquire Item
+
+type alias Item =
+  {
+    name: String
+  }
 
 type alias Turn =
   {

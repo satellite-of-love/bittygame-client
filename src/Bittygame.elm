@@ -88,6 +88,9 @@ takeTurn turn =
         ExitGame -> Just Exit  
         Print stuff -> Just (StuffToPrint stuff)
         Win -> Just YouWin
+        IDontKnowHowTo what -> Just (StuffToPrint ("You don't know how to " ++ what))
+        CantDoThat why -> Just (StuffToPrint ("You can't, because " ++ why))
+        Acquire item -> Just (StuffToPrint ("You now possess the " ++ item.name))
   in
     turn.instructions 
     |> List.filterMap doOneThing
@@ -210,7 +213,7 @@ view a model =
           Html.div [] [ Html.button [Events.onClick a Think] [Html.text "Think"] ],
           Html.label [] 
             [
-              Html.text "What do you do?", 
+              Html.text "What do you do? ", 
               Html.input 
                 [
                   onInput a Input, 
@@ -262,7 +265,7 @@ header model =
   let
     announcement = 
       if model.won then
-        "You have won "
+        "*** You have won "
       else
         "You are playing "
   in
