@@ -17,7 +17,7 @@ instruction =
 
 turn: Decoder Turn
 turn = object2 Turn
-  ("game" := D.string)
+  ("gameID" := D.string)
   ("instructions" := (D.list instruction))
 
 thoughts: Decoder Thoughts

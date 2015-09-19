@@ -13,7 +13,7 @@ type Instruction =
 
 type alias Turn =
   {
-    game: GameID,
+    gameID: GameID,
     instructions: List Instruction
   }
 

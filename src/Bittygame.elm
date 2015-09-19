@@ -49,14 +49,18 @@ server =
     else
       v
 
+scenario : String
+scenario = 
+  Dict.get "game" parameters
+  |> Maybe.withDefault "Hungover"
 
 -- MODEL
 type alias Model = 
   {
     displayText : String,
-    currentMove : String,
-    state : State,
-    gameName : String,
+    currentMove : GameAction,
+    gameID : Maybe GameID,
+    scenarioName : ScenarioName,
     inGame : Bool,
     won : Bool
   }
@@ -65,21 +69,17 @@ init: (Model, Effects Action)
 init = 
   let
     initialDisplayText = "Hello there"
-    initialState = { inventory = [] }
-    gameName = 
-      Dict.get "game" parameters
-      |> Maybe.withDefault "hungover"
   in
   (
     {
       displayText = initialDisplayText,
       currentMove = "",
-      state = initialState,
-      gameName = gameName,
+      gameID = Nothing,
+      scenarioName = scenario,
       inGame = True,
       won = False
     },
-    BittygameClient.beginGame server takeTurn handleError gameName
+    BittygameClient.beginGame server takeTurn handleError scenarioName
   )
 
 -- update
@@ -94,14 +94,14 @@ takeTurn turn =
   in
     turn.instructions 
     |> List.filterMap doOneThing
-    |> ManyActions
+    |> ManyActions turn.gameID
 
 handleError e = StuffToPrint ("crap!! " ++ (toString e))
 
 
 type Action = 
     SitAround
-  | ManyActions (List Action)
+  | ManyActions GameID (List Action)
   | Think
   | StuffToPrint String
   | Input String
@@ -114,8 +114,8 @@ update action model =
   case action of
     Think -> (model, respondToThink model)
     SitAround -> (model, Effects.none)
-    ManyActions allOfThese ->
-      updateAll allOfThese model -- mutually recursive
+    ManyActions gameID allOfThese ->
+      updateAll allOfThese { model | gameID <- Just gameID } -- mutually recursive
     Input move -> 
       ( 
         { model |
@@ -162,18 +162,16 @@ update action model =
       )
 
 respondToThink : Model -> Effects Action
-respondToThink model =       
-  BittygameClient.think server doWithThoughts handleError model.gameName model.state
+respondToThink model = 
+  case model.gameID of 
+    Just gameID -> BittygameClient.think server doWithThoughts handleError gameID
+    Nothing -> Effects.none
 
 respondToMakeMove : Model -> Effects Action  
 respondToMakeMove model =
-  BittygameClient.turn server takeTurn handleError 
-    model.gameName 
-    { 
-      state = model.state, 
-      playerMove = model.currentMove 
-    }
-  
+  case model.gameID of
+    Just gameID -> BittygameClient.turn server takeTurn handleError gameID model.currentMove 
+    Nothing -> StuffToPrint "WAT! Tried to make a move without a game" |> Task.succeed |> Effects.task
 
 updateAll : List Action -> Model -> (Model, Effects Action)
 updateAll actions model =
@@ -189,7 +187,7 @@ updateAll actions model =
 
 doWithThoughts : Thoughts -> Action
 doWithThoughts thoughts =
-  StuffToPrint ("Well, I could " ++ (joinTheFuckingList " or " thoughts))
+  StuffToPrint ("Well, I could " ++ (joinTheList " or " thoughts))
 
 
 joinTheList: String -> List String -> String
@@ -239,7 +237,7 @@ header model =
   in
   Html.div [] 
     [
-      Html.h1 [] [Html.text (announcement ++ model.gameName)]
+      Html.h1 [] [Html.text (announcement ++ model.scenarioName)]
     ]
 
 onInput : Signal.Address a -> (String -> a) -> Attribute
