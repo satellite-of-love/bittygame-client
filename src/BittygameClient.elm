@@ -2,18 +2,17 @@ module BittygameClient(beginGame, think, turn) where
 
 import Http
 import Task
-import GetWithHeaders exposing (postJson)
 import Effects exposing (Effects)
 import BittygameClient.Types exposing (..)
 import BittygameClient.Serialization as Ser
 
-beginGameUrl baseUrl name = baseUrl ++ "/game/" ++ name ++ "/begin"
+beginGameUrl baseUrl name = baseUrl ++ "/scenario/" ++ (Http.uriEncode name) ++ "/begin"
 
-thinkUrl baseUrl name = baseUrl ++ "/game/" ++ name ++ "/think"
+thinkUrl baseUrl game = baseUrl ++ "/game/" ++ game ++ "/think"
 
-turnUrl baseUrl name = baseUrl ++ "/game/" ++ name ++ "/turn"
+turnUrl baseUrl game action = baseUrl ++ "/game/" ++ game ++ "/turn/" ++ (Http.uriEncode action)
 
-beginGame: String -> (Turn -> action) -> (Http.Error -> action) -> String -> Effects action
+beginGame: String -> (Turn -> action) -> (Http.Error -> action) -> ScenarioName -> Effects action
 beginGame baseUrl successAction failureAction name = 
   let
     handler result =
@@ -26,30 +25,28 @@ beginGame baseUrl successAction failureAction name =
   |> Task.map handler
   |> Effects.task
 
-think: String -> (Thoughts -> action) -> (Http.Error -> action) -> String -> State -> Effects action
-think baseUrl successAction failureAction name state = 
+think: String -> (Thoughts -> action) -> (Http.Error -> action) -> GameID -> Effects action
+think baseUrl successAction failureAction game = 
   let
     handler result =
       case result of
         Ok  but -> successAction but
         Err poo -> failureAction poo
   in
-  postJson Ser.thoughts [] (thinkUrl baseUrl name) (Ser.encodeState state)
-  |> Task.map snd -- ignore the headers in the response
+  Http.get Ser.thoughts (thinkUrl baseUrl game)
   |> Task.toResult
   |> Task.map handler
   |> Effects.task
 
-turn: String -> (Turn -> action) -> (Http.Error -> action) -> String -> Act -> Effects action
-turn baseUrl successAction failureAction name act = 
+turn: String -> (Turn -> action) -> (Http.Error -> action) -> GameID -> GameAction -> Effects action
+turn baseUrl successAction failureAction game action = 
   let
     handler result =
       case result of
         Ok  but -> successAction but
         Err poo -> failureAction poo
   in
-  postJson Ser.turn [] (turnUrl baseUrl name) (Ser.encodeAct act)
-  |> Task.map snd -- ignore the headers in the response
+  Http.get Ser.turn (turnUrl baseUrl game action)
   |> Task.toResult
   |> Task.map handler
   |> Effects.task
