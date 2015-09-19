@@ -192,8 +192,8 @@ doWithThoughts thoughts =
   StuffToPrint ("Well, I could " ++ (joinTheFuckingList " or " thoughts))
 
 
-joinTheFuckingList: String -> List String -> String
-joinTheFuckingList joinString these = 
+joinTheList: String -> List String -> String
+joinTheList joinString these = 
   case these of
     [] -> ""
     one :: [] -> one 
