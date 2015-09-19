@@ -57,7 +57,7 @@ scenario =
 -- MODEL
 type alias Model = 
   {
-    displayText : String,
+    displayText : List String,
     currentMove : GameAction,
     gameID : Maybe GameID,
     scenarioName : ScenarioName,
@@ -67,19 +67,16 @@ type alias Model =
 
 init: (Model, Effects Action)
 init = 
-  let
-    initialDisplayText = "Hello there"
-  in
   (
     {
-      displayText = initialDisplayText,
+      displayText = [],
       currentMove = "",
       gameID = Nothing,
       scenarioName = scenario,
       inGame = True,
       won = False
     },
-    BittygameClient.beginGame server takeTurn handleError scenarioName
+    BittygameClient.beginGame server takeTurn handleError scenario
   )
 
 -- update
@@ -134,7 +131,7 @@ update action model =
       else
         (
           { model |
-            displayText <- "I am gonna " ++ model.currentMove,
+            displayText <- model.displayText ++ ["> " ++ model.currentMove],
             currentMove <- ""
           },
           respondToMakeMove model
@@ -142,7 +139,7 @@ update action model =
     StuffToPrint text -> 
       (
         { model |
-          displayText <- text
+          displayText <- model.displayText ++ [text]
         },
         Effects.none
       )
@@ -210,8 +207,17 @@ view a model =
     interactions =
       if model.inGame then
         [
-          Html.input [onInput a Input, onEnter a SitAround MakeMove, Attr.value model.currentMove] [],
-          Html.button [Events.onClick a Think] [Html.text "Think"]
+          Html.div [] [ Html.button [Events.onClick a Think] [Html.text "Think"] ],
+          Html.label [] 
+            [
+              Html.text "What do you do?", 
+              Html.input 
+                [
+                  onInput a Input, 
+                  onEnter a SitAround MakeMove, 
+                  Attr.value model.currentMove
+                ] []
+            ]
         ]
       else
         [ Html.a [Attr.href ""] [Html.text "Start Over"] ]
@@ -221,10 +227,35 @@ view a model =
     (
       [
         header model,
-        Html.text model.displayText,
-        Html.div [] interactions
+        Html.div [textDiv] (List.map textP model.displayText),
+        Html.div [interactionDiv] interactions
       ]
     )
+
+textP : String -> Html
+textP displayText =
+  Html.p 
+    [
+      Attr.style [("margin-top", "5px")]
+    ]
+    [ Html.text displayText ]
+
+textDiv : Html.Attribute
+textDiv = 
+  Attr.style 
+    [
+      ("padding", "20px"),
+      ("border", "solid 1px"),
+      ("height", "200px"),
+      ("overflow-y", "auto")
+    ]
+
+interactionDiv : Html.Attribute
+interactionDiv = 
+  Attr.style
+    [
+      ("padding", "10px")
+    ]
 
 header : Model -> Html
 header model = 
