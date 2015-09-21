@@ -91,6 +91,7 @@ takeTurn turn =
         IDontKnowHowTo what -> Just (StuffToPrint ("You don't know how to " ++ what))
         CantDoThat why -> Just (StuffToPrint ("You can't, because " ++ why))
         Acquire item -> Just (StuffToPrint ("You now possess the " ++ item.name))
+        IncreaseStat stat -> Just (StuffToPrint ("You have leveled up in " ++ stat))
   in
     turn.instructions 
     |> List.filterMap doOneThing

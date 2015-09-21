@@ -13,6 +13,7 @@ distinguishInstruction t =
     "unknown" -> object1 IDontKnowHowTo ("what" := D.string)
     "denied"  -> object1 CantDoThat ("why" := D.string)
     "acquire" -> object1 Acquire ("item" := item)
+    "increase" -> object1 IncreaseStat ("stat" := D.string)
 
 instruction: Decoder Instruction
 instruction =

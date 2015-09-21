@@ -6,6 +6,8 @@ type alias Thoughts = List String
 
 type alias GameID = String
 
+type alias Stat = String
+
 type Instruction = 
     ExitGame
   | Print String
@@ -13,6 +15,7 @@ type Instruction =
   | IDontKnowHowTo String
   | CantDoThat String
   | Acquire Item
+  | IncreaseStat Stat
 
 type alias Item =
   {
