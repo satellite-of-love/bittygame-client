@@ -52,7 +52,7 @@ server =
 scenario : String
 scenario = 
   Dict.get "game" parameters
-  |> Maybe.withDefault "Hungover"
+  |> Maybe.withDefault "jesslife"
 
 -- MODEL
 type alias Model = 
