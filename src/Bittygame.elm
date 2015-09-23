@@ -4,7 +4,6 @@ import Html exposing (Html, Attribute)
 import Html.Events as Events
 import Html.Attributes as Attr
 import Signal
-import Mouse
 import StartApp
 import Dict exposing (Dict)
 import Effects exposing (Effects, Never)
@@ -20,7 +19,7 @@ app = StartApp.start
   { 
     init = init, 
     view = view, 
-    update = update, 
+    update = update scrollydownyMailbox.address, 
     inputs = [] 
   }
 
@@ -31,6 +30,11 @@ port tasks : Signal (Task.Task Never ())
 port tasks = app.tasks
 
 port locationSearch : String
+
+scrollydownyMailbox = Signal.mailbox ""
+
+port scrollydowny : Signal String
+port scrollydowny = scrollydownyMailbox.signal
 
 parameters : Dict String String
 parameters = 
@@ -110,20 +114,17 @@ type Action =
   | Exit
   | YouWin
 
-update: Action -> Model -> (Model, Effects Action)
-update action model = 
+update: Signal.Address String -> Action -> Model -> (Model, Effects Action)
+update scrollydowny action model = 
   case action of
     Think -> (model, respondToThink model)
     SitAround -> (model, Effects.none)
     ManyActions gameID allOfThese ->
-      updateAll allOfThese { model | gameID <- Just gameID } -- mutually recursive
+      updateAll scrollydowny allOfThese { model | gameID <- Just gameID } -- mutually recursive
     Input move -> 
-      ( 
-        { model |
+        (,) { model |
           currentMove <- move
-        },
-        Effects.none
-      )
+        } Effects.none
     MakeMove -> 
       if model.currentMove == "think" then
         ( 
@@ -145,7 +146,7 @@ update action model =
         { model |
           displayText <- model.displayText ++ [text]
         },
-        Effects.none
+        Effects.task (Signal.send scrollydowny scrolldownid) |> Effects.map (always SitAround)
       )
     Exit -> 
       (
@@ -174,13 +175,13 @@ respondToMakeMove model =
     Just gameID -> BittygameClient.turn server takeTurn handleError gameID model.currentMove 
     Nothing -> StuffToPrint "WAT! Tried to make a move without a game" |> Task.succeed |> Effects.task
 
-updateAll : List Action -> Model -> (Model, Effects Action)
-updateAll actions model =
+updateAll : Signal.Address String -> List Action -> Model -> (Model, Effects Action)
+updateAll scrollydowny actions model =
   let
     keepUpdating: Action -> (Model, Effects Action) -> (Model, Effects Action)
     keepUpdating action (model, effectSoFar) =
       let
-        (newModel, moreEffects) = update action model
+        (newModel, moreEffects) = update scrollydowny action model
       in
         (newModel, Effects.batch [effectSoFar, moreEffects])
   in
@@ -231,10 +232,13 @@ view a model =
     (
       [
         header model,
-        Html.div [textDiv] (List.map textP model.displayText),
+        Html.div [textDiv, Attr.id scrolldownid] (List.map textP model.displayText),
         Html.div [interactionDiv] interactions
       ]
     )
+
+scrolldownid : String
+scrolldownid = "scrollydowny"
 
 textP : String -> Html
 textP displayText =
