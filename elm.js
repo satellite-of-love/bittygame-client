@@ -331,17 +331,40 @@ Elm.Bittygame.make = function (_elm) {
    });
    var header = function (model) {
       return function () {
-         var announcement = model.won ? "You have won " : "You are playing ";
+         var announcement = model.won ? "*** You have won " : "You are playing ";
          return A2($Html.div,
          _L.fromArray([]),
          _L.fromArray([A2($Html.h1,
          _L.fromArray([]),
          _L.fromArray([$Html.text(A2($Basics._op["++"],
          announcement,
-         model.gameName))]))]));
+         model.scenarioName))]))]));
       }();
    };
-   var joinTheFuckingList = F2(function (joinString,
+   var interactionDiv = $Html$Attributes.style(_L.fromArray([{ctor: "_Tuple2"
+                                                             ,_0: "padding"
+                                                             ,_1: "10px"}]));
+   var textDiv = $Html$Attributes.style(_L.fromArray([{ctor: "_Tuple2"
+                                                      ,_0: "padding"
+                                                      ,_1: "20px"}
+                                                     ,{ctor: "_Tuple2"
+                                                      ,_0: "border"
+                                                      ,_1: "solid 1px"}
+                                                     ,{ctor: "_Tuple2"
+                                                      ,_0: "height"
+                                                      ,_1: "200px"}
+                                                     ,{ctor: "_Tuple2"
+                                                      ,_0: "overflow-y"
+                                                      ,_1: "auto"}]));
+   var textP = function (displayText) {
+      return A2($Html.p,
+      _L.fromArray([$Html$Attributes.style(_L.fromArray([{ctor: "_Tuple2"
+                                                         ,_0: "margin-top"
+                                                         ,_1: "5px"}]))]),
+      _L.fromArray([$Html.text(displayText)]));
+   };
+   var scrolldownid = "scrollydowny";
+   var joinTheList = F2(function (joinString,
    these) {
       return function () {
          switch (these.ctor)
@@ -380,42 +403,54 @@ Elm.Bittygame.make = function (_elm) {
    var doWithThoughts = function (thoughts) {
       return StuffToPrint(A2($Basics._op["++"],
       "Well, I could ",
-      A2(joinTheFuckingList,
+      A2(joinTheList,
       " or ",
       thoughts)));
    };
    var Think = {ctor: "Think"};
-   var ManyActions = function (a) {
+   var ManyActions = F2(function (a,
+   b) {
       return {ctor: "ManyActions"
-             ,_0: a};
-   };
+             ,_0: a
+             ,_1: b};
+   });
    var SitAround = {ctor: "SitAround"};
    var view = F2(function (a,
    model) {
       return function () {
-         var interactions = model.inGame ? _L.fromArray([A2($Html.input,
-                                                        _L.fromArray([A2(onInput,
-                                                                     a,
-                                                                     Input)
-                                                                     ,A3(onEnter,
-                                                                     a,
-                                                                     SitAround,
-                                                                     MakeMove)
-                                                                     ,$Html$Attributes.value(model.currentMove)]),
-                                                        _L.fromArray([]))
-                                                        ,A2($Html.button,
+         var interactions = model.inGame ? _L.fromArray([A2($Html.div,
+                                                        _L.fromArray([]),
+                                                        _L.fromArray([A2($Html.button,
                                                         _L.fromArray([A2($Html$Events.onClick,
                                                         a,
                                                         Think)]),
-                                                        _L.fromArray([$Html.text("Think")]))]) : _L.fromArray([A2($Html.a,
+                                                        _L.fromArray([$Html.text("Think")]))]))
+                                                        ,A2($Html.label,
+                                                        _L.fromArray([]),
+                                                        _L.fromArray([$Html.text("What do you do? ")
+                                                                     ,A2($Html.input,
+                                                                     _L.fromArray([A2(onInput,
+                                                                                  a,
+                                                                                  Input)
+                                                                                  ,A3(onEnter,
+                                                                                  a,
+                                                                                  SitAround,
+                                                                                  MakeMove)
+                                                                                  ,$Html$Attributes.value(model.currentMove)]),
+                                                                     _L.fromArray([]))]))]) : _L.fromArray([A2($Html.a,
          _L.fromArray([$Html$Attributes.href("")]),
          _L.fromArray([$Html.text("Start Over")]))]);
          return A2($Html.div,
          _L.fromArray([]),
          _L.fromArray([header(model)
-                      ,$Html.text(model.displayText)
                       ,A2($Html.div,
-                      _L.fromArray([]),
+                      _L.fromArray([textDiv
+                                   ,$Html$Attributes.id(scrolldownid)]),
+                      A2($List.map,
+                      textP,
+                      model.displayText))
+                      ,A2($Html.div,
+                      _L.fromArray([interactionDiv]),
                       interactions)]));
       }();
    });
@@ -429,17 +464,33 @@ Elm.Bittygame.make = function (_elm) {
          var doOneThing = function (instr) {
             return function () {
                switch (instr.ctor)
-               {case "ExitGame":
+               {case "Acquire":
+                  return $Maybe.Just(StuffToPrint(A2($Basics._op["++"],
+                    "You now possess the ",
+                    instr._0.name)));
+                  case "CantDoThat":
+                  return $Maybe.Just(StuffToPrint(A2($Basics._op["++"],
+                    "You can\'t, because ",
+                    instr._0)));
+                  case "ExitGame":
                   return $Maybe.Just(Exit);
+                  case "IDontKnowHowTo":
+                  return $Maybe.Just(StuffToPrint(A2($Basics._op["++"],
+                    "You don\'t know how to ",
+                    instr._0)));
+                  case "IncreaseStat":
+                  return $Maybe.Just(StuffToPrint(A2($Basics._op["++"],
+                    "You have leveled up in ",
+                    instr._0)));
                   case "Print":
                   return $Maybe.Just(StuffToPrint(instr._0));
                   case "Win":
                   return $Maybe.Just(YouWin);}
                _U.badCase($moduleName,
-               "between lines 90 and 94");
+               "between lines 91 and 99");
             }();
          };
-         return ManyActions($List.filterMap(doOneThing)(turn.instructions));
+         return ManyActions(turn.gameID)($List.filterMap(doOneThing)(turn.instructions));
       }();
    };
    var Model = F6(function (a,
@@ -451,11 +502,17 @@ Elm.Bittygame.make = function (_elm) {
       return {_: {}
              ,currentMove: b
              ,displayText: a
-             ,gameName: d
+             ,gameID: c
              ,inGame: e
-             ,state: c
+             ,scenarioName: d
              ,won: f};
    });
+   var scrollydownyMailbox = $Signal.mailbox("");
+   var scrollydowny = Elm.Native.Port.make(_elm).outboundSignal("scrollydowny",
+   function (v) {
+      return v;
+   },
+   scrollydownyMailbox.signal);
    var locationSearch = Elm.Native.Port.make(_elm).inbound("locationSearch",
    "String",
    function (v) {
@@ -463,14 +520,14 @@ Elm.Bittygame.make = function (_elm) {
       v);
    });
    var parameters = function () {
-      var _v6 = $UrlParameterParser.parseSearchString(locationSearch);
-      switch (_v6.ctor)
+      var _v10 = $UrlParameterParser.parseSearchString(locationSearch);
+      switch (_v10.ctor)
       {case "Error":
          return $Dict.empty;
          case "UrlParams":
-         return _v6._0;}
+         return _v10._0;}
       _U.badCase($moduleName,
-      "between lines 37 and 39");
+      "between lines 41 and 43");
    }();
    var server = function () {
       var v = $Maybe.withDefault("http://localhost:8080")(A2($Dict.get,
@@ -484,24 +541,40 @@ Elm.Bittygame.make = function (_elm) {
       v) : v;
    }();
    var respondToThink = function (model) {
-      return A5($BittygameClient.think,
-      server,
-      doWithThoughts,
-      handleError,
-      model.gameName,
-      model.state);
+      return function () {
+         var _v13 = model.gameID;
+         switch (_v13.ctor)
+         {case "Just":
+            return A4($BittygameClient.think,
+              server,
+              doWithThoughts,
+              handleError,
+              _v13._0);
+            case "Nothing":
+            return $Effects.none;}
+         _U.badCase($moduleName,
+         "between lines 168 and 170");
+      }();
    };
    var respondToMakeMove = function (model) {
-      return A5($BittygameClient.turn,
-      server,
-      takeTurn,
-      handleError,
-      model.gameName,
-      {_: {}
-      ,playerMove: model.currentMove
-      ,state: model.state});
+      return function () {
+         var _v15 = model.gameID;
+         switch (_v15.ctor)
+         {case "Just":
+            return A5($BittygameClient.turn,
+              server,
+              takeTurn,
+              handleError,
+              _v15._0,
+              model.currentMove);
+            case "Nothing":
+            return $Effects.task($Task.succeed(StuffToPrint("WAT! Tried to make a move without a game")));}
+         _U.badCase($moduleName,
+         "between lines 174 and 176");
+      }();
    };
-   var update = F2(function (action,
+   var update = F3(function (scrollydowny,
+   action,
    model) {
       return function () {
          switch (action.ctor)
@@ -512,11 +585,15 @@ Elm.Bittygame.make = function (_elm) {
                    model)
                    ,_1: $Effects.none};
             case "Input":
-            return {ctor: "_Tuple2"
-                   ,_0: _U.replace([["currentMove"
-                                    ,action._0]],
-                   model)
-                   ,_1: $Effects.none};
+            return A2(F2(function (v0,v1) {
+                 return {ctor: "_Tuple2"
+                        ,_0: v0
+                        ,_1: v1};
+              }),
+              _U.replace([["currentMove"
+                          ,action._0]],
+              model),
+              $Effects.none);
             case "MakeMove":
             return _U.eq(model.currentMove,
               "think") ? {ctor: "_Tuple2"
@@ -526,16 +603,21 @@ Elm.Bittygame.make = function (_elm) {
                          ,_1: respondToThink(model)} : {ctor: "_Tuple2"
                                                        ,_0: _U.replace([["displayText"
                                                                         ,A2($Basics._op["++"],
-                                                                        "I am gonna ",
-                                                                        model.currentMove)]
+                                                                        model.displayText,
+                                                                        _L.fromArray([A2($Basics._op["++"],
+                                                                        "> ",
+                                                                        model.currentMove)]))]
                                                                        ,["currentMove"
                                                                         ,""]],
                                                        model)
                                                        ,_1: respondToMakeMove(model)};
             case "ManyActions":
-            return A2(updateAll,
-              action._0,
-              model);
+            return A3(updateAll,
+              scrollydowny,
+              action._1,
+              _U.replace([["gameID"
+                          ,$Maybe.Just(action._0)]],
+              model));
             case "SitAround":
             return {ctor: "_Tuple2"
                    ,_0: model
@@ -543,9 +625,13 @@ Elm.Bittygame.make = function (_elm) {
             case "StuffToPrint":
             return {ctor: "_Tuple2"
                    ,_0: _U.replace([["displayText"
-                                    ,action._0]],
+                                    ,A2($Basics._op["++"],
+                                    model.displayText,
+                                    _L.fromArray([action._0]))]],
                    model)
-                   ,_1: $Effects.none};
+                   ,_1: $Effects.map($Basics.always(SitAround))($Effects.task(A2($Signal.send,
+                   scrollydowny,
+                   scrolldownid)))};
             case "Think":
             return {ctor: "_Tuple2"
                    ,_0: model
@@ -556,26 +642,28 @@ Elm.Bittygame.make = function (_elm) {
                    model)
                    ,_1: $Effects.none};}
          _U.badCase($moduleName,
-         "between lines 114 and 162");
+         "between lines 119 and 164");
       }();
    });
-   var updateAll = F2(function (actions,
+   var updateAll = F3(function (scrollydowny,
+   actions,
    model) {
       return function () {
          var keepUpdating = F2(function (action,
-         _v13) {
+         _v22) {
             return function () {
-               switch (_v13.ctor)
+               switch (_v22.ctor)
                {case "_Tuple2":
                   return function () {
-                       var $ = A2(update,
+                       var $ = A3(update,
+                       scrollydowny,
                        action,
-                       _v13._0),
+                       _v22._0),
                        newModel = $._0,
                        moreEffects = $._1;
                        return {ctor: "_Tuple2"
                               ,_0: newModel
-                              ,_1: $Effects.batch(_L.fromArray([_v13._1
+                              ,_1: $Effects.batch(_L.fromArray([_v22._1
                                                                ,moreEffects]))};
                     }();}
                _U.badCase($moduleName,
@@ -590,31 +678,26 @@ Elm.Bittygame.make = function (_elm) {
          actions);
       }();
    });
-   var init = function () {
-      var gameName = $Maybe.withDefault("hungover")(A2($Dict.get,
-      "game",
-      parameters));
-      var initialState = {_: {}
-                         ,inventory: _L.fromArray([])};
-      var initialDisplayText = "Hello there";
-      return {ctor: "_Tuple2"
-             ,_0: {_: {}
-                  ,currentMove: ""
-                  ,displayText: initialDisplayText
-                  ,gameName: gameName
-                  ,inGame: true
-                  ,state: initialState
-                  ,won: false}
-             ,_1: A4($BittygameClient.beginGame,
-             server,
-             takeTurn,
-             handleError,
-             gameName)};
-   }();
+   var scenario = $Maybe.withDefault("jesslife")(A2($Dict.get,
+   "game",
+   parameters));
+   var init = {ctor: "_Tuple2"
+              ,_0: {_: {}
+                   ,currentMove: ""
+                   ,displayText: _L.fromArray([])
+                   ,gameID: $Maybe.Nothing
+                   ,inGame: true
+                   ,scenarioName: scenario
+                   ,won: false}
+              ,_1: A4($BittygameClient.beginGame,
+              server,
+              takeTurn,
+              handleError,
+              scenario)};
    var app = $StartApp.start({_: {}
                              ,init: init
                              ,inputs: _L.fromArray([])
-                             ,update: update
+                             ,update: update(scrollydownyMailbox.address)
                              ,view: view});
    var main = app.html;
    var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",
@@ -622,8 +705,10 @@ Elm.Bittygame.make = function (_elm) {
    _elm.Bittygame.values = {_op: _op
                            ,app: app
                            ,main: main
+                           ,scrollydownyMailbox: scrollydownyMailbox
                            ,parameters: parameters
                            ,server: server
+                           ,scenario: scenario
                            ,Model: Model
                            ,init: init
                            ,takeTurn: takeTurn
@@ -641,8 +726,12 @@ Elm.Bittygame.make = function (_elm) {
                            ,respondToMakeMove: respondToMakeMove
                            ,updateAll: updateAll
                            ,doWithThoughts: doWithThoughts
-                           ,joinTheFuckingList: joinTheFuckingList
+                           ,joinTheList: joinTheList
                            ,view: view
+                           ,scrolldownid: scrolldownid
+                           ,textP: textP
+                           ,textDiv: textDiv
+                           ,interactionDiv: interactionDiv
                            ,header: header
                            ,onInput: onInput
                            ,onEnter: onEnter};
@@ -663,28 +752,30 @@ Elm.BittygameClient.make = function (_elm) {
    $BittygameClient$Serialization = Elm.BittygameClient.Serialization.make(_elm),
    $BittygameClient$Types = Elm.BittygameClient.Types.make(_elm),
    $Effects = Elm.Effects.make(_elm),
-   $GetWithHeaders = Elm.GetWithHeaders.make(_elm),
    $Http = Elm.Http.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm);
-   var turnUrl = F2(function (baseUrl,
-   name) {
+   var turnUrl = F3(function (baseUrl,
+   game,
+   action) {
       return A2($Basics._op["++"],
       baseUrl,
       A2($Basics._op["++"],
       "/game/",
       A2($Basics._op["++"],
-      name,
-      "/turn")));
+      game,
+      A2($Basics._op["++"],
+      "/turn/",
+      $Http.uriEncode(action)))));
    });
    var turn = F5(function (baseUrl,
    successAction,
    failureAction,
-   name,
-   act) {
+   game,
+   action) {
       return function () {
          var handler = function (result) {
             return function () {
@@ -694,31 +785,31 @@ Elm.BittygameClient.make = function (_elm) {
                   case "Ok":
                   return successAction(result._0);}
                _U.badCase($moduleName,
-               "between lines 47 and 50");
+               "between lines 45 and 48");
             }();
          };
-         return $Effects.task($Task.map(handler)($Task.toResult($Task.map($Basics.snd)(A4($GetWithHeaders.postJson,
+         return $Effects.task($Task.map(handler)($Task.toResult(A2($Http.get,
          $BittygameClient$Serialization.turn,
-         _L.fromArray([]),
-         A2(turnUrl,baseUrl,name),
-         $BittygameClient$Serialization.encodeAct(act))))));
+         A3(turnUrl,
+         baseUrl,
+         game,
+         action)))));
       }();
    });
    var thinkUrl = F2(function (baseUrl,
-   name) {
+   game) {
       return A2($Basics._op["++"],
       baseUrl,
       A2($Basics._op["++"],
       "/game/",
       A2($Basics._op["++"],
-      name,
+      game,
       "/think")));
    });
-   var think = F5(function (baseUrl,
+   var think = F4(function (baseUrl,
    successAction,
    failureAction,
-   name,
-   state) {
+   game) {
       return function () {
          var handler = function (result) {
             return function () {
@@ -728,14 +819,12 @@ Elm.BittygameClient.make = function (_elm) {
                   case "Ok":
                   return successAction(result._0);}
                _U.badCase($moduleName,
-               "between lines 33 and 36");
+               "between lines 32 and 35");
             }();
          };
-         return $Effects.task($Task.map(handler)($Task.toResult($Task.map($Basics.snd)(A4($GetWithHeaders.postJson,
+         return $Effects.task($Task.map(handler)($Task.toResult(A2($Http.get,
          $BittygameClient$Serialization.thoughts,
-         _L.fromArray([]),
-         A2(thinkUrl,baseUrl,name),
-         $BittygameClient$Serialization.encodeState(state))))));
+         A2(thinkUrl,baseUrl,game)))));
       }();
    });
    var beginGameUrl = F2(function (baseUrl,
@@ -743,9 +832,9 @@ Elm.BittygameClient.make = function (_elm) {
       return A2($Basics._op["++"],
       baseUrl,
       A2($Basics._op["++"],
-      "/game/",
+      "/scenario/",
       A2($Basics._op["++"],
-      name,
+      $Http.uriEncode(name),
       "/begin")));
    });
    var beginGame = F4(function (baseUrl,
@@ -761,7 +850,7 @@ Elm.BittygameClient.make = function (_elm) {
                   case "Ok":
                   return successAction(result._0);}
                _U.badCase($moduleName,
-               "between lines 20 and 23");
+               "between lines 19 and 22");
             }();
          };
          return $Effects.task($Task.map(handler)($Task.toResult(A2($Http.get,
@@ -793,47 +882,55 @@ Elm.BittygameClient.Serialization.make = function (_elm) {
    $Basics = Elm.Basics.make(_elm),
    $BittygameClient$Types = Elm.BittygameClient.Types.make(_elm),
    $Json$Decode = Elm.Json.Decode.make(_elm),
-   $Json$Encode = Elm.Json.Encode.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
-   var encodeState = function (state) {
-      return $Json$Encode.object(_L.fromArray([{ctor: "_Tuple2"
-                                               ,_0: "inventory"
-                                               ,_1: $Json$Encode.list(A2($List.map,
-                                               $Json$Encode.string,
-                                               state.inventory))}]));
-   };
-   var encodeAct = function (act) {
-      return $Json$Encode.object(_L.fromArray([{ctor: "_Tuple2"
-                                               ,_0: "state"
-                                               ,_1: encodeState(act.state)}
-                                              ,{ctor: "_Tuple2"
-                                               ,_0: "playerMove"
-                                               ,_1: $Json$Encode.string(act.playerMove)}]));
-   };
    var thoughts = $Json$Decode.list($Json$Decode.string);
-   var state = A2($Json$Decode.object1,
-   $BittygameClient$Types.State,
+   var item = A2($Json$Decode.object1,
+   $BittygameClient$Types.Item,
    A2($Json$Decode._op[":="],
-   "inventory",
-   $Json$Decode.list($Json$Decode.string)));
+   "name",
+   $Json$Decode.string));
    var distinguishInstruction = function (t) {
       return function () {
          switch (t)
-         {case "exit":
+         {case "acquire":
+            return A2($Json$Decode.object1,
+              $BittygameClient$Types.Acquire,
+              A2($Json$Decode._op[":="],
+              "item",
+              item));
+            case "denied":
+            return A2($Json$Decode.object1,
+              $BittygameClient$Types.CantDoThat,
+              A2($Json$Decode._op[":="],
+              "why",
+              $Json$Decode.string));
+            case "exit":
             return $Json$Decode.succeed($BittygameClient$Types.ExitGame);
+            case "increase":
+            return A2($Json$Decode.object1,
+              $BittygameClient$Types.IncreaseStat,
+              A2($Json$Decode._op[":="],
+              "stat",
+              $Json$Decode.string));
             case "print":
             return A2($Json$Decode.object1,
               $BittygameClient$Types.Print,
               A2($Json$Decode._op[":="],
               "message",
               $Json$Decode.string));
+            case "unknown":
+            return A2($Json$Decode.object1,
+              $BittygameClient$Types.IDontKnowHowTo,
+              A2($Json$Decode._op[":="],
+              "what",
+              $Json$Decode.string));
             case "win":
             return $Json$Decode.succeed($BittygameClient$Types.Win);}
          _U.badCase($moduleName,
-         "between lines 10 and 13");
+         "between lines 9 and 16");
       }();
    };
    var instruction = A2($Json$Decode.andThen,
@@ -844,16 +941,14 @@ Elm.BittygameClient.Serialization.make = function (_elm) {
    var turn = A3($Json$Decode.object2,
    $BittygameClient$Types.Turn,
    A2($Json$Decode._op[":="],
-   "state",
-   state),
+   "gameID",
+   $Json$Decode.string),
    A2($Json$Decode._op[":="],
    "instructions",
    $Json$Decode.list(instruction)));
    _elm.BittygameClient.Serialization.values = {_op: _op
                                                ,turn: turn
-                                               ,thoughts: thoughts
-                                               ,encodeState: encodeState
-                                               ,encodeAct: encodeAct};
+                                               ,thoughts: thoughts};
    return _elm.BittygameClient.Serialization.values;
 };
 Elm.BittygameClient = Elm.BittygameClient || {};
@@ -874,18 +969,29 @@ Elm.BittygameClient.Types.make = function (_elm) {
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
-   var Act = F2(function (a,b) {
-      return {_: {}
-             ,playerMove: b
-             ,state: a};
-   });
    var Turn = F2(function (a,b) {
       return {_: {}
-             ,instructions: b
-             ,state: a};
+             ,gameID: a
+             ,instructions: b};
    });
-   var State = function (a) {
-      return {_: {},inventory: a};
+   var Item = function (a) {
+      return {_: {},name: a};
+   };
+   var IncreaseStat = function (a) {
+      return {ctor: "IncreaseStat"
+             ,_0: a};
+   };
+   var Acquire = function (a) {
+      return {ctor: "Acquire"
+             ,_0: a};
+   };
+   var CantDoThat = function (a) {
+      return {ctor: "CantDoThat"
+             ,_0: a};
+   };
+   var IDontKnowHowTo = function (a) {
+      return {ctor: "IDontKnowHowTo"
+             ,_0: a};
    };
    var Win = {ctor: "Win"};
    var Print = function (a) {
@@ -896,9 +1002,12 @@ Elm.BittygameClient.Types.make = function (_elm) {
                                        ,ExitGame: ExitGame
                                        ,Print: Print
                                        ,Win: Win
-                                       ,State: State
-                                       ,Turn: Turn
-                                       ,Act: Act};
+                                       ,IDontKnowHowTo: IDontKnowHowTo
+                                       ,CantDoThat: CantDoThat
+                                       ,Acquire: Acquire
+                                       ,IncreaseStat: IncreaseStat
+                                       ,Item: Item
+                                       ,Turn: Turn};
    return _elm.BittygameClient.Types.values;
 };
 Elm.Char = Elm.Char || {};
@@ -2572,132 +2681,6 @@ Elm.Effects.make = function (_elm) {
                          ,batch: batch
                          ,toTask: toTask};
    return _elm.Effects.values;
-};
-Elm.GetWithHeaders = Elm.GetWithHeaders || {};
-Elm.GetWithHeaders.make = function (_elm) {
-   "use strict";
-   _elm.GetWithHeaders = _elm.GetWithHeaders || {};
-   if (_elm.GetWithHeaders.values)
-   return _elm.GetWithHeaders.values;
-   var _op = {},
-   _N = Elm.Native,
-   _U = _N.Utils.make(_elm),
-   _L = _N.List.make(_elm),
-   $moduleName = "GetWithHeaders",
-   $Basics = Elm.Basics.make(_elm),
-   $Dict = Elm.Dict.make(_elm),
-   $Http = Elm.Http.make(_elm),
-   $Json$Decode = Elm.Json.Decode.make(_elm),
-   $Json$Encode = Elm.Json.Encode.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $Task = Elm.Task.make(_elm);
-   var handleResponseWithHeaders = F2(function (handle,
-   response) {
-      return function () {
-         var _v0 = _U.cmp(200,
-         response.status) < 1 && _U.cmp(response.status,
-         300) < 0;
-         switch (_v0)
-         {case false:
-            return $Task.fail(A2($Http.BadResponse,
-              response.status,
-              response.statusText));
-            case true: return function () {
-                 var _v1 = response.value;
-                 switch (_v1.ctor)
-                 {case "Text":
-                    return $Task.map(function (v) {
-                         return {ctor: "_Tuple2"
-                                ,_0: $Dict.toList(response.headers)
-                                ,_1: v};
-                      })(handle(_v1._0));}
-                 return $Task.fail($Http.UnexpectedPayload("Response body is a blob, expecting a string."));
-              }();}
-         _U.badCase($moduleName,
-         "between lines 84 and 93");
-      }();
-   });
-   var promoteError = function (rawError) {
-      return function () {
-         switch (rawError.ctor)
-         {case "RawNetworkError":
-            return $Http.NetworkError;
-            case "RawTimeout":
-            return $Http.Timeout;}
-         _U.badCase($moduleName,
-         "between lines 77 and 79");
-      }();
-   };
-   var fromJsonWithHeaders = F2(function (decoder,
-   response) {
-      return function () {
-         var decode = function (str) {
-            return function () {
-               var _v4 = A2($Json$Decode.decodeString,
-               decoder,
-               str);
-               switch (_v4.ctor)
-               {case "Err":
-                  return $Task.fail($Http.UnexpectedPayload(_v4._0));
-                  case "Ok":
-                  return $Task.succeed(_v4._0);}
-               _U.badCase($moduleName,
-               "between lines 67 and 70");
-            }();
-         };
-         return A2($Task.andThen,
-         A2($Task.mapError,
-         promoteError,
-         response),
-         handleResponseWithHeaders(decode));
-      }();
-   });
-   var postJson = F4(function (decoder,
-   headers,
-   url,
-   jsonBody) {
-      return function () {
-         var request = {_: {}
-                       ,body: $Http.string(A2($Json$Encode.encode,
-                       0,
-                       jsonBody))
-                       ,headers: A2($Basics._op["++"],
-                       headers,
-                       _L.fromArray([{ctor: "_Tuple2"
-                                     ,_0: "Content-Type"
-                                     ,_1: "application/json"}]))
-                       ,url: url
-                       ,verb: "POST"};
-         return A2(fromJsonWithHeaders,
-         decoder,
-         A2($Http.send,
-         $Http.defaultSettings,
-         request));
-      }();
-   });
-   var get = F3(function (decoder,
-   headers,
-   url) {
-      return function () {
-         var request = {_: {}
-                       ,body: $Http.empty
-                       ,headers: headers
-                       ,url: url
-                       ,verb: "GET"};
-         return A2(fromJsonWithHeaders,
-         decoder,
-         A2($Http.send,
-         $Http.defaultSettings,
-         request));
-      }();
-   });
-   _elm.GetWithHeaders.values = {_op: _op
-                                ,get: get
-                                ,postJson: postJson};
-   return _elm.GetWithHeaders.values;
 };
 Elm.Graphics = Elm.Graphics || {};
 Elm.Graphics.Collage = Elm.Graphics.Collage || {};
@@ -5412,37 +5395,6 @@ Elm.Maybe.make = function (_elm) {
                        ,Just: Just
                        ,Nothing: Nothing};
    return _elm.Maybe.values;
-};
-Elm.Mouse = Elm.Mouse || {};
-Elm.Mouse.make = function (_elm) {
-   "use strict";
-   _elm.Mouse = _elm.Mouse || {};
-   if (_elm.Mouse.values)
-   return _elm.Mouse.values;
-   var _op = {},
-   _N = Elm.Native,
-   _U = _N.Utils.make(_elm),
-   _L = _N.List.make(_elm),
-   $moduleName = "Mouse",
-   $Basics = Elm.Basics.make(_elm),
-   $Native$Mouse = Elm.Native.Mouse.make(_elm),
-   $Signal = Elm.Signal.make(_elm);
-   var clicks = $Native$Mouse.clicks;
-   var isDown = $Native$Mouse.isDown;
-   var position = $Native$Mouse.position;
-   var x = A2($Signal.map,
-   $Basics.fst,
-   position);
-   var y = A2($Signal.map,
-   $Basics.snd,
-   position);
-   _elm.Mouse.values = {_op: _op
-                       ,position: position
-                       ,x: x
-                       ,y: y
-                       ,isDown: isDown
-                       ,clicks: clicks};
-   return _elm.Mouse.values;
 };
 Elm.Native.Array = {};
 Elm.Native.Array.make = function(localRuntime) {
@@ -8990,50 +8942,6 @@ Elm.Native.List.make = function(localRuntime) {
 	};
 	return localRuntime.Native.List.values = Elm.Native.List.values;
 
-};
-
-Elm.Native = Elm.Native || {};
-Elm.Native.Mouse = {};
-Elm.Native.Mouse.make = function(localRuntime) {
-
-	localRuntime.Native = localRuntime.Native || {};
-	localRuntime.Native.Mouse = localRuntime.Native.Mouse || {};
-	if (localRuntime.Native.Mouse.values)
-	{
-		return localRuntime.Native.Mouse.values;
-	}
-
-	var NS = Elm.Native.Signal.make(localRuntime);
-	var Utils = Elm.Native.Utils.make(localRuntime);
-
-	var position = NS.input('Mouse.position', Utils.Tuple2(0,0));
-
-	var isDown = NS.input('Mouse.isDown', false);
-
-	var clicks = NS.input('Mouse.clicks', Utils.Tuple0);
-
-	var node = localRuntime.isFullscreen()
-		? document
-		: localRuntime.node;
-
-	localRuntime.addListener([clicks.id], node, 'click', function click() {
-		localRuntime.notify(clicks.id, Utils.Tuple0);
-	});
-	localRuntime.addListener([isDown.id], node, 'mousedown', function down() {
-		localRuntime.notify(isDown.id, true);
-	});
-	localRuntime.addListener([isDown.id], node, 'mouseup', function up() {
-		localRuntime.notify(isDown.id, false);
-	});
-	localRuntime.addListener([position.id], node, 'mousemove', function move(e) {
-		localRuntime.notify(position.id, Utils.getXY(e));
-	});
-
-	return localRuntime.Native.Mouse.values = {
-		position: position,
-		isDown: isDown,
-		clicks: clicks
-	};
 };
 
 Elm.Native.Port = {};
